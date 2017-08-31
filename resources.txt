@@ -1,0 +1,38 @@
+### Ding data set
+
+Ding F. Sharma S. Chalasani P. Demidov V.V. Broude N.E. Dokholyan N.V.
+Ab initio RNA folding by discrete molecular dynamics: from structure prediction to folding mechanisms RNA
+2008 RNA 14 1164 1173
+
+
+### Kyu data set
+
+Kyungsook H. Chirag N.
+PRI-Modeler: Extracting RNA structural elements from PDB files of protein–RNA complexes
+2007 FEBS Letters 581 1881–1890
+
+###########################################################
+
+# P-P
+> mean          6.195798
+> std           0.626003
+> mean+2*std    7.447804
+> mean-2*std    4.943792
+
+# C-P
+> mean          3.857807
+> std           0.2435259
+> mean+2*std    4.344859
+> mean-2*std    3.370755
+
+# C-C
+> mean 		6.064909
+> std		0.5213518
+> mean+2*std	7.107612
+> mean-2*std	5.022205
+
+# C-C&P-P
+> mean		6.130354
+> std		0.5797615
+> mean+2*std	7.289877
+> mean-2*std	4.970831

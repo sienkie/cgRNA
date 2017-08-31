@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: cabsDock
+Version: 1.0
+Summary: CABSDock in python
+Home-page: https://bitbucket.org/lcbio/cabsdock
+Author: Laboratory of Computational Biology
+Author-email: mkurc@cnbc.uw.edu.pl
+License: free for non-commercial users
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires: numpy
+Requires: matplotlib

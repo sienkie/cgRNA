@@ -1,0 +1,3 @@
+[console_scripts]
+cabsDock = cabsDock.__main__:run_job
+
