@@ -122,7 +122,7 @@ class Lattice:
             for i, v in enumerate(self.vectors):
                 #  iterate over all possible vectors
 
-                # if len(coord) > 2 and self.good[prev, i] == 0:  #wtf
+                # if len(coord) > 2 and self.good[prev, i] == 0:  #??
                 #     continue
 
                 if len(coord) < 2 or self.good[prev, i] == 1:
@@ -139,13 +139,14 @@ class Lattice:
                 coord.append(coord[-1] + self.vectors[min_i])
                 prev = min_i
 
+        # ??
         coord.insert(0, coord[0] + coord[1] - coord[2])
         coord.append(coord[-1] + coord[-2] - coord[-3])
 
         return coord
 
 
-RNAstruct = RNA('Kyu-data-set/1si3.pdb')
+RNAstruct = RNA('Ding-data-set/1a51.pdb')
 chain = RNAstruct.chains[0]
 lattice = Lattice()
 coords = lattice.cast(chain)
