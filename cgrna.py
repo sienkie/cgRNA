@@ -146,14 +146,6 @@ class Lattice:
         return coord
 
 
-RNAstruct = RNA('Ding-data-set/1a51.pdb')
-chain = RNAstruct.chains[0]
-lattice = Lattice()
-coords = lattice.cast(chain)
-print chain
-print len(coords), len(chain.atoms)
-
-
 class SelectCGAtoms(Select):
     def __init__(self, atoms):
         self.atoms = atoms
@@ -165,14 +157,29 @@ class SelectCGAtoms(Select):
             return False
 
 
-io = PDBIO()
-io.set_structure(RNAstruct.structure)
-io.save('rna_main_chain.pdb', SelectCGAtoms(RNAstruct.pdb_atoms))
+def change_coords(RNA, coords):
+    for i, vector in enumerate(coords[1:-1]):
+        cor = np.array([float(vector.x), float(vector.y), float(vector.z)])
+        RNA.pdb_atoms[i].set_coord(cor)
 
-for i, vector in enumerate(coords[1:-1]):
-    cor = np.array([float(vector.x), float(vector.y), float(vector.z)])
-    RNAstruct.pdb_atoms[i].set_coord(cor)
 
-io = PDBIO()
-io.set_structure(RNAstruct.structure)
-io.save('CGrna_main_chain.pdb', SelectCGAtoms(RNAstruct.pdb_atoms))
+def create_main_chain_files(RNA, coords=None):
+    io = PDBIO()
+    io.set_structure(RNA.structure)
+    io.save('structures/' + RNA.name + '_RNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
+
+    if coords:
+        change_coords(RNA, coords)
+        io = PDBIO()
+        io.set_structure(RNA.structure)
+        io.save('structures/' + RNA.name + '_cgRNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
+
+
+RNAstruct = RNA('Ding-data-set/1a51.pdb')
+chain = RNAstruct.chains[0]
+lattice = Lattice()
+coords = lattice.cast(chain)
+print chain
+print len(coords), len(chain.atoms)
+
+create_main_chain_files(RNAstruct, coords)
