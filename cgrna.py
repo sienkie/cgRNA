@@ -6,12 +6,13 @@ from Bio.PDB import PDBParser, PDBIO, Select
 
 
 class Atom:
-    def __init__(self, v, kind):
+    def __init__(self, v, kind, res):
         self.coord = v
         self.kind = kind
+        self.res = res
 
     def __str__(self):
-        return str(self.kind) + '\t' + str(self.coord)
+        return str(self.kind) + '\t' + str(self.coord) + '\t' + str(self.res)
 
 
 class RNAChain:
@@ -47,11 +48,11 @@ class RNA:
         for chain in self.structure[0]:  # model1
             ch = RNAChain(chain.id)
             chains.append(ch)
-            for residue in chain:
+            for residue in chain.get_residues():
                 for atom in residue:
                     if atom.id in mainchain:
                         coords = list(atom.get_vector())
-                        ch.add_atom(Atom(Vector3d(coords[0], coords[1], coords[2]), atom.id))
+                        ch.add_atom(Atom(Vector3d(coords[0], coords[1], coords[2]), atom.id, residue.get_resname()))
                         self.pdb_atoms.append(atom)
 
         for chain in chains:
@@ -68,7 +69,7 @@ class RNA:
 class Lattice:
     """
     This class represent a CABS-like lattice. It is initialized with:
-    grid_spacing: distance between grid nodes, default 0.495 A
+    grid_spacing: distance between grid nodes, default 0.67 A
     r12: tuple with min and max allowed values for P-C4' pseudo-bond length
     r13: tuple with min and max allowed values for P-C4'-P or C4'-P-C4' end distance
     """
@@ -157,19 +158,19 @@ class SelectCGAtoms(Select):
             return False
 
 
-def change_coords(RNA, coords):
+def change_coords(RNA, cl, coords):
     for i, vector in enumerate(coords[1:-1]):
-        cor = np.array([float(vector.x), float(vector.y), float(vector.z)])
+        cor = np.array([float(vector.x)*cl.grid, float(vector.y)*cl.grid, float(vector.z)*cl.grid])
         RNA.pdb_atoms[i].set_coord(cor)
 
 
-def create_main_chain_files(RNA, coords=None):
+def create_main_chain_files(RNA, cl, coords=None):
     io = PDBIO()
     io.set_structure(RNA.structure)
     io.save('structures/' + RNA.name + '_RNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
 
     if coords:
-        change_coords(RNA, coords)
+        change_coords(RNA, cl, coords)
         io = PDBIO()
         io.set_structure(RNA.structure)
         io.save('structures/' + RNA.name + '_cgRNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
@@ -177,9 +178,9 @@ def create_main_chain_files(RNA, coords=None):
 
 RNAstruct = RNA('Ding-data-set/1a51.pdb')
 chain = RNAstruct.chains[0]
-lattice = Lattice()
-coords = lattice.cast(chain)
+#lattice = Lattice()
+#coords = lattice.cast(chain)
 print chain
-print len(coords), len(chain.atoms)
+#print len(coords), len(chain.atoms)
 
-create_main_chain_files(RNAstruct, coords)
+#create_main_chain_files(RNAstruct, lattice, coords)

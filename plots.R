@@ -1,20 +1,28 @@
 setwd("~/PycharmProjects/cgRNA")
 library(ggplot2)
 
-file <- read.csv(file = "Kyu_dists.csv",header = TRUE, sep=",")
-file2 <- read.csv(file = "Ding_dists.csv",header = TRUE, sep=",")
+file <- read.csv(file = "DingKyu_dist_two_ways.csv",header = TRUE, sep=",")
+head(file)
+pur <- c(file$p_mc_pur_AG)
+pir <- c(file$p_mc_pir_CU)
+all_pmc <- c(file$p_mc_pir_CU,file$p_mc_pur_AG)
+pur_pn <- c(file$p_n_pur_AG)
+pir_pn <- c(file$p_n_pir_CU)
+all_pn <- c(file$p_n_pir_CU, file$p_n_pur_AG)
 
-pp <- c(file$distPP,file2$distPP)
-cp <- c(file$distCP,file2$distCP, file$distPC,file2$distPC)
-cc <- c(file$distCC,file2$distCC)
-ccpp <- c(file$distPP,file2$distPP,file$distCC,file2$distCC)
+pur_c4 <- c(file$c4_mc_pur_AG)
+pir_c4 <- c(file$c4_mc_pir_CU)
+all_c4mc <- c(file$c4_mc_pir_CU,file$c4_mc_pur_AG)
+pur_c4n <- c(file$c4_n_pur_AG)
+pir_c4n <- c(file$c4_n_pir_CU)
+all_c4n <- c(file$c4_n_pir_CU, file$c4_n_pur_AG)
 
-# PP
+# PURYNY A/G
 
-m<-mean(pp)
-std<-sqrt(var(pp))
-hist(pp, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", ylim=c(0, 0.7), 
-     main="P-P distance in Ding&Kyu data set")
+m<-mean(pur, na.rm=TRUE)
+std<-sqrt(var(pur, na.rm=TRUE))
+hist(pur, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="P-MassCenter distance in Purines")
 curve(dnorm(x, mean=m, sd=std), 
       col="darkblue", lwd=2, add=TRUE, yaxt="n")
 #abline(v = m, col = "red")
@@ -24,48 +32,279 @@ m
 m+2*std
 m-2*std
 
-# CP
+#> m
+#[1] 5.429752
+#> m+2*std
+#[1] 6.40083
+#> m-2*std
+#[1] 4.458673
 
-m2<-mean(cp)
-std2<-sqrt(var(cp))
-hist(cp, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", ylim=c(0, 2), 
-     main="C-P distance in Ding&Kyu data set")
+# PIRYMIDYNY C/U
+
+m2<-mean(pir, na.rm=TRUE)
+std2<-sqrt(var(pir,na.rm=TRUE))
+hist(pir, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="P-MassCenter distance in Pyrimidines")
 curve(dnorm(x, mean=m2, sd=std2), 
       col="darkblue", lwd=2, add=TRUE, yaxt="n")
-#abline(v = m2, col = "red")
-#abline(v = m2+2*std2, col = "red")
-#abline(v = m2-2*std2, col = "red")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
 m2
 m2+2*std2
 m2-2*std2
 
-# CC
+#> m2
+#[1] 6.209618
+#> m2+2*std2
+#[1] 7.337574
+#> m2-2*std2
+#[1] 5.081663
 
-m3<-mean(cc)
-std3<-sqrt(var(cc))
-hist(cc, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", ylim=c(0, 2), 
-     main="C-C distance in Ding&Kyu data set")
+# ALL
+
+m3<-mean(all_pmc, na.rm=TRUE)
+std3<-sqrt(var(all_pmc,na.rm=TRUE))
+hist(all_pmc, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="P-MassCenter distances")
 curve(dnorm(x, mean=m3, sd=std3), 
       col="darkblue", lwd=2, add=TRUE, yaxt="n")
-#abline(v = m2, col = "red")
-#abline(v = m2+2*std2, col = "red")
-#abline(v = m2-2*std2, col = "red")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
 m3
 m3+2*std3
 m3-2*std3
 
-# CC&PP
+#> m3
+#[1] 5.802005
+#> m3+2*std3
+#[1] 7.108527
+#> m3-2*std3
+#[1] 4.495483
 
-m4<-mean(ccpp)
-std4<-sqrt(var(ccpp))
-hist(ccpp, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", ylim=c(0, 1), 
-     main="C-C/P-P distance in Ding&Kyu data set")
-curve(dnorm(x, mean=m4, sd=std4), 
+
+# PURYNY A/G P-N
+
+m<-mean(pur_pn, na.rm=TRUE)
+std<-sqrt(var(pur_pn, na.rm=TRUE))
+hist(pur_pn, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="P-N9 distance in Purines")
+curve(dnorm(x, mean=m, sd=std), 
       col="darkblue", lwd=2, add=TRUE, yaxt="n")
-#abline(v = m2, col = "red")
-#abline(v = m2+2*std2, col = "red")
-#abline(v = m2-2*std2, col = "red")
-m4
-std4
-m4+2*std4
-m4-2*std4
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#ONE WAY DISTS
+#> m
+#[1] 5.429752
+#> m+2*std
+#[1] 6.40083
+#> m-2*std
+#[1] 4.458673
+#TWO WAY DISTS
+#> m
+#[1] 5.500791
+#> m+2*std
+#[1] 6.597009
+#> m-2*std
+#[1] 4.404574
+
+# PIRYMIDYNY C/U
+
+m2<-mean(pir_pn, na.rm=TRUE)
+std2<-sqrt(var(pir_pn,na.rm=TRUE))
+hist(pir_pn, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="P-N1 distance in Pyrimidines")
+curve(dnorm(x, mean=m2, sd=std2), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m2
+m2+2*std2
+m2-2*std2
+
+#ONE WAY DISTS
+#> m2
+#[1] 5.38635
+#> m2+2*std2
+#[1] 6.225597
+#> m2-2*std2
+#[1] 4.547104
+#TWO WAY DISTS
+#> m2
+#[1] 5.475633
+#> m2+2*std2
+#[1] 6.260225
+#> m2-2*std2
+#[1] 4.691042
+
+# ALL
+
+m3<-mean(all_pn, na.rm=TRUE)
+std3<-sqrt(var(all_pn,na.rm=TRUE))
+hist(all_pn, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="P-N1/N9 distances")
+curve(dnorm(x, mean=m3, sd=std3), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m3
+m3+2*std3
+m3-2*std3
+
+#ONE WAY DISTS
+#> m3
+#[1] 5.409035
+#> m3+2*std3
+#[1] 6.3205
+#> m3-2*std3
+#[1] 4.49757
+#TWO WAY DISTS
+#> m3
+#[1] 5.488952
+#> m3+2*std3
+#[1] 6.451449
+#> m3-2*std3
+#[1] 4.526455
+
+####################################################3
+
+# PURYNY A/G
+
+m<-mean(pur_c4, na.rm=TRUE)
+std<-sqrt(var(pur_c4, na.rm=TRUE))
+hist(pur_c4, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="C4-MassCenter distance in Purines")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 3.391569
+#> m+2*std
+#[1] 3.5908
+#> m-2*std
+#[1] 3.192339
+
+# PIRYMIDYNY C/U
+
+m2<-mean(pir_c4, na.rm=TRUE)
+std2<-sqrt(var(pir_c4,na.rm=TRUE))
+hist(pir_c4, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="C4-MassCenter distance in Pyrimidines")
+curve(dnorm(x, mean=m2, sd=std2), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m2
+m2+2*std2
+m2-2*std2
+
+#> m2
+#[1] 4.918714
+#> m2+2*std2
+#[1] 5.152942
+#> m2-2*std2
+#[1] 4.684487
+
+# ALL
+
+m3<-mean(all_c4mc, na.rm=TRUE)
+std3<-sqrt(var(all_c4mc,na.rm=TRUE))
+hist(all_c4mc, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="C4-MassCenter distances")
+curve(dnorm(x, mean=m3, sd=std3), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m3
+m3+2*std3
+m3-2*std3
+
+#> m3
+#[1] 4.120521
+#> m3+2*std3
+#[1] 5.661569
+#> m3-2*std3
+#[1] 2.579472
+
+
+# PURYNY A/G C4-N
+
+m<-mean(pur_c4n, na.rm=TRUE)
+std<-sqrt(var(pur_c4n, na.rm=TRUE))
+hist(pur_c4n, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="C4-N9 distance in Purines")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 3.391569
+#> m+2*std
+#[1] 3.5908
+#> m-2*std
+#[1] 3.192339
+
+# PIRYMIDYNY C/U
+
+m2<-mean(pir_c4n, na.rm=TRUE)
+std2<-sqrt(var(pir_c4n,na.rm=TRUE))
+hist(pir_c4n, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="C4-N1 distance in Pyrimidines")
+curve(dnorm(x, mean=m2, sd=std2), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m2
+m2+2*std2
+m2-2*std2
+
+#> m2
+#[1] 3.409576
+#> m2+2*std2
+#[1] 3.580421
+#> m2-2*std2
+#[1] 3.238731
+
+# ALL
+
+m3<-mean(all_c4n, na.rm=TRUE)
+std3<-sqrt(var(all_c4n,na.rm=TRUE))
+hist(all_c4n, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="C4-N1/N9 distances")
+curve(dnorm(x, mean=m3, sd=std3), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m3
+m3+2*std3
+m3-2*std3
+
+#> m3
+#[1] 3.400164
+#> m3+2*std3
+#[1] 3.587232
+#> m3-2*std3
+#[1] 3.213096
