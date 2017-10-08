@@ -17,6 +17,16 @@ pur_c4n <- c(file$c4_n_pur_AG)
 pir_c4n <- c(file$c4_n_pir_CU)
 all_c4n <- c(file$c4_n_pir_CU, file$c4_n_pur_AG)
 
+pur_c4cg <- c(file$c4_cg_pur)
+pir_c4cu <- c(file$c4_cu_pir)
+all <- c(file$c4_cg_pur, file$c4_cu_pir)
+
+pur_pcg <- c(file$p_cg_pur)
+pir_pcu <- c(file$p_cu_pir)
+all_pcgu <- c(file$p_cg_pur, file$p_cu_pir)
+
+c_c <- c(file$c4_c4)
+
 # PURYNY A/G
 
 m<-mean(pur, na.rm=TRUE)
@@ -308,3 +318,167 @@ m3-2*std3
 #[1] 3.587232
 #> m3-2*std3
 #[1] 3.213096
+
+####################################################################################
+# PURYNY
+
+m<-mean(pur_c4cg, na.rm=TRUE)
+std<-sqrt(var(pur_c4cg,na.rm=TRUE))
+hist(pur_c4cg, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="Purines: C4-CG distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 3.81845
+#> m+2*std
+#[1] 4.322397
+#> m-2*std
+#[1] 3.314503
+
+# PIRYMIDYNY
+
+m<-mean(pir_c4cu, na.rm=TRUE)
+std<-sqrt(var(pir_c4cu,na.rm=TRUE))
+hist(pir_c4cu, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="Pyrimidines: C4-CU distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 3.646458
+#> m+2*std
+#[1] 4.004011
+#> m-2*std
+#[1] 3.288905
+
+# ALL
+
+m<-mean(all, na.rm=TRUE)
+std<-sqrt(var(all,na.rm=TRUE))
+hist(all, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="All C4-CG and C4-CU distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 3.736353
+#> m+2*std
+#[1] 4.208843
+#> m-2*std
+#[1] 3.263863
+
+##################################### P - CG/CU ###############################################
+# PURYNY
+
+m<-mean(pur_pcg, na.rm=TRUE)
+std<-sqrt(var(pur_pcg,na.rm=TRUE))
+hist(pur_pcg, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="Purines: P-CG distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 6.001569
+#> m+2*std
+#[1] 10.38241
+#> m-2*std
+#[1] 1.620732
+
+# PIRYMIDYNY
+
+m<-mean(pir_pcu, na.rm=TRUE)
+std<-sqrt(var(pir_pcu,na.rm=TRUE))
+hist(pir_pcu, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="Pyrimidines: P-CU distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 6.010625
+#> m+2*std
+#[1] 11.43423
+#> m-2*std
+#[1] 0.5870153
+
+# ALL
+
+m<-mean(all_pcgu, na.rm=TRUE)
+std<-sqrt(var(all_pcgu,na.rm=TRUE))
+hist(all_pcgu, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="All P-CG and P-CU distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 6.004013
+#> m+2*std
+#[1] 10.68865
+#> m-2*std
+#[1] 1.319373
+
+# INTER DISTS
+#> m
+#[1] 4.750205
+#> m+2*std
+#[1] 6.273313
+#> m-2*std
+#[1] 3.227097
+
+################## c4-c4 ####################
+
+m<-mean(c_c, na.rm=TRUE)
+std<-sqrt(var(c_c,na.rm=TRUE))
+hist(c_c, density=20, breaks=20, prob=TRUE, xlab="distance", ylab="Probability", freq=F, 
+     main="All c4-c4 distances")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+#abline(v = m, col = "red")
+#abline(v = m+2*std, col = "red")
+#abline(v = m-2*std, col = "red")
+m
+m+2*std
+m-2*std
+
+#> m
+#[1] 7.733181
+#> m+2*std
+#[1] 14.29276
+#> m-2*std
+#[1] 1.173598
