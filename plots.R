@@ -1,6 +1,47 @@
 setwd("~/PycharmProjects/cgRNA")
 library(ggplot2)
 
+file <- read.csv(file = "cross_products_all.csv",header = TRUE, sep=",")
+head(file)
+cp <- c(file$cross_products)
+
+m<-mean(cp, na.rm=TRUE)
+std<-sqrt(var(cp, na.rm=TRUE))
+hist(cp, density=20, breaks=20, prob=TRUE, xlab="cross products distance to [0,0,0]", ylab="Probability", freq=F, 
+     main=" C4'-N1/N9 vectors and lattice vectors\n cross products 'parallelity'")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+m
+m+2*std
+m-2*std
+
+##########
+file <- read.csv(file = "RMSDs_all.csv",header = TRUE, sep=",")
+head(file)
+intra <- c(file$intra_structure_rmsd)
+inter <- c(file$mean_inter_structure_rmsd)
+
+m<-mean(intra, na.rm=TRUE)
+std<-sqrt(var(intra, na.rm=TRUE))
+hist(intra, density=20, breaks=20, prob=TRUE, xlab="RMSDs", ylab="Probability", freq=F, 
+     main="RMSDs between random P-N1/N9-P triangles from structures\n (all from structure vs all)")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+m
+m+2*std
+m-2*std
+
+m<-mean(inter, na.rm=TRUE)
+std<-sqrt(var(inter, na.rm=TRUE))
+hist(inter, density=20, breaks=20, prob=TRUE, xlab="RMSDs", ylab="Probability", freq=F, 
+     main="Mean RMSDs between P-N1/N9-P triangles in every structure")
+curve(dnorm(x, mean=m, sd=std), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+m
+m+2*std
+m-2*std
+
+######
 file <- read.csv(file = "DingKyu_dist_two_ways.csv",header = TRUE, sep=",")
 head(file)
 pur <- c(file$p_mc_pur_AG)

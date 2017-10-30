@@ -761,7 +761,7 @@ def aa_to_short(seq):
 
 
 def next_letter(taken_letters):
-    """Returns next available letter for new protein chain."""
+    """Returns next available letter for diff_stats protein chain."""
     return re.sub('[' + taken_letters + ']', '', ascii_uppercase)[0]
 
 

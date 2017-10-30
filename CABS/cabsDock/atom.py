@@ -704,8 +704,8 @@ class Atoms:
     def fix_broken_chains(self, cut_off=4.5, used_letters=''):
         """
         Checks for gaps in protein chains (Ca-Ca distance > cut_off). Splits broken chains
-        on gaps taking next available letter for the new chain, except for those in used_letters.
-        Returns a dictionary with residue ids (new -> old).
+        on gaps taking next available letter for the diff_stats chain, except for those in used_letters.
+        Returns a dictionary with residue ids (diff_stats -> old).
         :param cut_off: float
         :param used_letters: str
         :return: Atoms
@@ -733,7 +733,7 @@ class Atoms:
 
     def update_ids(self, ids, pedantic=True):
         """
-        Updates resnum, icode, chid from dictionary ids with pairs old, new resid_id. Pedantic controls behaviour
+        Updates resnum, icode, chid from dictionary ids with pairs old, diff_stats resid_id. Pedantic controls behaviour
         if key not found in ids. pedantic = True raises Exception, pedantic = False does nothing
         :param ids: {str: str}
         :param pedantic: Bool

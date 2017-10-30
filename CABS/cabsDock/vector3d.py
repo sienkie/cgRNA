@@ -191,13 +191,13 @@ class Vector3d:
 
 
 if __name__ == '__main__':
-    print Vector3d()
-    print Vector3d('1 2 3')
-    print Vector3d('4, 5, 6')
-    print Vector3d(7, 8, 9)
-    print Vector3d(z='3.14', x=2.71)
-    print Vector3d(np.matrix('1 2 3'))
-    print Vector3d(np.matrix('1; 2; 3'))
+    print(Vector3d())
+    print(Vector3d('1 2 3'))
+    print(Vector3d('4, 5, 6'))
+    print(Vector3d(7, 8, 9))
+    print(Vector3d(z='3.14', x=2.71))
+    print(Vector3d(np.matrix('1 2 3')))
+    print(Vector3d(np.matrix('1; 2; 3')))
     a = (1, 2, 7)
-    print Vector3d(a)
-    print Vector3d().random()
+    print(Vector3d(a))
+    print(Vector3d().random())

@@ -11,6 +11,42 @@ Kyungsook H. Chirag N.
 PRI-Modeler: Extracting RNA structural elements from PDB files of protein–RNA complexes
 2007 FEBS Letters 581 1881–1890
 
+
+###########################################################
+
+# RNAstruct.create_selected_atoms_file('triangle', RNAstruct.atoms_triads)
+
+# cl = Lattice(grid_spacing=0.67, r12=(4.53, 6.45), r13=(4.97, 7.29))
+# len(cl.vectors)
+# grid spacing from P-C4' statistics ==> 704 vectors 704:64=11
+# r12: P-N1/N9
+# r13: P-(C4')-P
+#       ==> vectors: 2482
+# grid: 0.7 pc_vectors: 560 pn_vectors: 2146
+# grid: 0.57 pc_vectors: 1016 pn_vectors: 3940
+
+# cl = Lattice(grid_spacing=0.67, r12=(4.46, 6.4), r13=(4.97, 7.29))
+# grid spacing from P-C4' statistics ==> 704 vectors 704:64=11
+# r12: P-MC for PURINES A/G
+# r13: P-(C4')-P
+#       ==> vectors: 2530
+# grid: 0.7 pc_vectors: 560 pn_vectors: 2194
+# grid: 0.57 pc_vectors: 1016 pn_vectors: 4096
+
+# cl = Lattice(grid_spacing=0.67, r12=(5.08, 7.34), r13=(4.97, 7.29))
+# grid spacing from P-C4' statistics ==> 704 vectors 704:64=11
+# r12: P-MC for PYRIMIDINES C/U
+# r13: P-(C4')-P
+#       ==> vectors: 3706
+# grid: 0.7 pc_vectors: 560 pn_vectors: 3370
+# grid: 0.57 pc_vectors: 1016 pn_vectors: 6100
+
+# cl = Lattice(grid_spacing=0.57, r12=(5.08, 7.34), r13=(4.97, 7.29))
+# print len(cl.vectors)
+
+# C4-CU C4-CG
+# (3.263863, 4.208843)
+
 ###########################################################
 
 # P-P

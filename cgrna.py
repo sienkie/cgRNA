@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from cabsDock.vector3d import Vector3d
+from CABS.cabsDock.vector3d import Vector3d
 import numpy as np
 from Bio.PDB import PDBParser, PDBIO, Select
 
@@ -180,7 +180,7 @@ RNAstruct = RNA('Ding-data-set/1a51.pdb')
 chain = RNAstruct.chains[0]
 #lattice = Lattice()
 #coords = lattice.cast(chain)
-print chain
+print(chain)
 #print len(coords), len(chain.atoms)
 
 #create_main_chain_files(RNAstruct, lattice, coords)

@@ -1,356 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from cabsDock.vector3d import Vector3d
-import numpy as np
-import matplotlib.pyplot as plt
-from Bio.PDB import PDBParser, PDBIO, Select, StructureBuilder
-from Bio.PDB.Atom import Atom
-import glob
-import warnings
-from cgrna import Lattice
+from modules import *
 
 warnings.filterwarnings('error', message='.*discontinuous at.*')
-
-global nucleid_acid_atoms
-nucleid_acid_atoms = ['N1', 'N2', 'N3', 'N4', 'N6', 'N7', 'N9', 'C2', 'C4', 'C5', 'C6', 'C8', 'O2', 'O4', 'O6', 'H1',
-                      'H2', 'H3', 'H5', 'H6', 'H8', 'H41', 'H42', 'H21', 'H22', 'H61', 'H62']
-
-global cg_atoms_pur
-global cg_atoms_pir
-
-cg_atoms_pur = ["C4'", "P", "N9"]  # A | G
-cg_atoms_pir = ["C4'", "P", "N1"]  # C | U
-
-cg_tiads = {
-    '  A': ["C4'", "P", "N6", "C8", "C2"],
-    '  G': ["C4'", "P", "N2", "C8", "O6"],
-    '  C': ["C4'", "P", "N4", "O6", "C6"],
-    '  U': ["C4'", "P", "O4", "O2", "C6"]
-}
-
-
-class Atom:
-    def __init__(self, v, kind, mass):
-        self.coord = v
-        self.kind = kind
-        self.mass = mass
-
-    def __str__(self, res=None):
-        return str(self.kind) + '\t' + str(self.coord) + '\t' + str(res)
-
-    def calculate_dist(self, other):
-        self_vec = np.array([float(self.coord.x), float(self.coord.y), float(self.coord.z)])
-        other_vec = np.array([float(other.coord.x), float(other.coord.y), float(other.coord.z)])
-        return plt.mlab.dist(self_vec, other_vec)
-
-
-class Residue:
-    def __init__(self, kind):
-        self.kind = kind
-        self.atoms = []
-        self.mass_center = None
-        self.coords = []
-
-    def add_atom(self, atom):
-        self.atoms.append(atom)
-
-    def calculate_mass_center(self):
-        mass_sum = 0
-        factored_vectors_sum = Vector3d(0, 0, 0)
-        n_atom = None
-        for atom in self.atoms:
-            if atom.kind in nucleid_acid_atoms:
-                factored_vectors_sum += float(atom.mass) * atom.coord
-                mass_sum += atom.mass
-                if atom.kind in ['N1', 'N9']:
-                    n_atom = atom
-        self.mass_center = factored_vectors_sum / mass_sum
-        # print(self.mass_center)
-        # TODO creating new atom for mass center now i overwrite N1/N9
-        for atom in self.atoms:
-            if self.kind in ['  A', '  G'] and atom.kind == 'N9':
-                n_atom.coord = self.mass_center
-            if self.kind in ['  C', '  U'] and atom.kind == 'N1':
-                n_atom.coord = self.mass_center
-
-    def __str__(self):
-        s = ''
-        for at in self.atoms:
-            s += at.__str__(self.kind) + '\n'
-        return s
-
-    def set_coords(self):
-        for atom in self.atoms:
-            if self.kind in ['  A', '  G'] and atom.kind in cg_atoms_pur:
-                self.coords.append(atom.coord)
-            if self.kind in ['  C', '  U'] and atom.kind in cg_atoms_pir:
-                self.coords.append(atom.coord)
-
-    def calculate_p_n_dist(self):
-        p = 'P'
-        n = 'N9' if self.kind in ['  A', '  G'] else 'N1'
-        p_vec = None
-        n_vec = None
-        for atom in self.atoms:
-            if atom.kind == p:
-                vector = atom.coord
-                p_vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-            elif atom.kind == n:
-                vector = atom.coord
-                n_vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-        return [(self.kind, plt.mlab.dist(p_vec, n_vec))]
-
-    def get_atom(self, at_name):
-        for atom in self.atoms:
-            if atom.kind == at_name:
-                return atom
-
-    def calculate_c4_n_dist(self):
-        p = "C4'"
-        n = 'N9' if self.kind in ['  A', '  G'] else 'N1'
-        p_vec = None
-        n_vec = None
-        for atom in self.atoms:
-            if atom.kind == p:
-                vector = atom.coord
-                p_vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-            elif atom.kind == n:
-                vector = atom.coord
-                n_vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-        return [(self.kind, plt.mlab.dist(p_vec, n_vec))]
-
-    def calculate_c4_cu_cg_dist(self):
-        # C4-CU lub C4-CG ==> A,G:CG=C8 | C,U:CU=C6
-        at1 = "C4'"
-        at2 = "C8" if self.kind in ['  A', '  G'] else 'C6'
-        at1vec = None
-        at2vec = None
-        for atom in self.atoms:
-            if atom.kind == at1:
-                vector = atom.coord
-                at1vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-            elif atom.kind == at2:
-                vector = atom.coord
-                at2vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-        return [(self.kind, plt.mlab.dist(at1vec, at2vec))]
-
-    def calculate_p_cu_cg_dist(self):
-        # P-CU lub P-CG ==> A,G:CG=C8 | C,U:CU=C6
-        at1 = "P"
-        at2 = "C8" if self.kind in ['  A', '  G'] else 'C6'
-        at1vec = None
-        at2vec = None
-        for atom in self.atoms:
-            if atom.kind == at1:
-                vector = atom.coord
-                at1vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-            elif atom.kind == at2:
-                vector = atom.coord
-                at2vec = np.array([float(vector.x), float(vector.y), float(vector.z)])
-        return [(self.kind, plt.mlab.dist(at1vec, at2vec))]
-
-class RNAChain:
-    def __init__(self, kind):
-        self.residues = []
-        self.kind = kind
-        self.coords = []
-
-    def add_residue(self, res):
-        self.residues.append(res)
-
-    def __str__(self):
-        s = 'RNA chain ' + str(self.kind) + '\n'
-        for res in self.residues:
-            s += str(res) + '\n'
-        return s
-
-    def calculate_mass_center(self):
-        for residue in self.residues:
-            # print(residue.kind)
-            residue.calculate_mass_center()
-
-    def set_coords(self):
-        for res in self.residues:
-            res.set_coords()
-            for cor in res.coords:
-                self.coords.append(cor)
-
-    def calculate_p_n_dist(self):
-        inter_dists = []
-        intra_dists = []
-        for residue in self.residues:
-            inter_dists += residue.calculate_p_n_dist()
-        for i in range(len(self.residues))[1:]:
-            at1 = self.residues[i - 1].get_atom('N9' if self.residues[i - 1].kind in ['  A', '  G'] else 'N1')
-            at2 = self.residues[i].get_atom('P')
-            intra_dists += [(self.residues[i - 1].kind, at1.calculate_dist(at2))]
-        return inter_dists + intra_dists
-
-    def calculate_c4_c4_dist(self):
-        intra_dists = []
-        for i in range(len(self.residues))[1:]:
-            at1 = self.residues[i - 1].get_atom("C4'")
-            at2 = self.residues[i].get_atom("C4'")
-            intra_dists += [at1.calculate_dist(at2)]
-        return intra_dists
-
-    def calculate_c4_n_dist(self):
-        inter_dists = []
-        for residue in self.residues:
-            inter_dists += residue.calculate_c4_n_dist()
-        return inter_dists
-
-    def calculate_c4_cu_cg_dist(self):
-        # C4-CU lub C4-CG ==> A,G:CG=C8 | C,U:CU=C6
-        inter_dists = []
-        for residue in self.residues:
-            inter_dists += residue.calculate_c4_cu_cg_dist()
-        return inter_dists
-
-    def calculate_p_cu_cg_dist(self):
-        # P-CU lub P-CG ==> A,G:CG=C8 | C,U:CU=C6
-        inter_dists = []
-        for residue in self.residues:
-            inter_dists += residue.calculate_p_cu_cg_dist()
-        return inter_dists
-
-class RNA:
-    def __init__(self, pdbfile):
-        self.chains = []
-        self.cg_atoms = []  # C4' | P | N1 / N9 ==> changed in mass_center
-        self.atoms_triads = []  # according to cg_triads dictionary
-        self.pdb_residues = []
-        self.coords = []
-        self.changed_coords = False
-
-        p = PDBParser()
-        if len(pdbfile.split('/')) > 1:
-            self.name = pdbfile.split('/')[-1]
-        self.name = self.name.split('.')[0]
-        print(pdbfile)
-
-        chains = []
-        self.structure = p.get_structure(self.name, pdbfile)
-        for chain in self.structure[0]:  # model_1
-            ch = RNAChain(chain.id)
-            chains.append(ch)
-            for residue in chain.get_residues():
-                res = Residue(residue.get_resname())
-                cg_atoms_list = []
-                atoms_pdb = []
-                for atom in residue:
-                    coords = list(atom.get_vector())
-                    res.add_atom(Atom(Vector3d(coords[0], coords[1], coords[2]), atom.id, atom.mass))
-                    if residue.get_resname() in ['  A', '  G'] and atom.id in cg_atoms_pur:
-                        cg_atoms_list.append(atom)
-                    if residue.get_resname() in ['  C', '  U'] and atom.id in cg_atoms_pir:
-                        cg_atoms_list.append(atom)
-                    if residue.get_resname() in cg_tiads.keys() and atom.id in cg_tiads[residue.get_resname()]:
-                        atoms_pdb.append(atom)
-                if res.atoms != [] and len(cg_atoms_list) == 3 and len(atoms_pdb) == 5:
-                    ch.add_residue(res)
-                    for at in atoms_pdb:
-                        self.atoms_triads.append(at)
-                    self.pdb_residues.append(residue)
-                    for at in cg_atoms_list:
-                        self.cg_atoms.append(at)
-
-        for chain in chains:
-            if len(chain.residues) >= 1:
-                self.chains.append(chain)
-
-    def __str__(self):
-        s = 'RNA ' + self.name + '\n'
-        for chain in self.chains:
-            s += str(chain) + '\n'
-        return s
-
-    def calculate_mass_centers(self):
-        for chain in self.chains:
-            chain.calculate_mass_center()
-
-    def set_coords(self):
-        for chain in self.chains:
-            chain.set_coords()
-            for cor in chain.coords:
-                self.coords.append(cor)
-
-    def create_selected_atoms_file(self, prefix, atoms=None):
-        if not atoms:
-            atoms = self.cg_atoms
-        if self.changed_coords:
-            cor_list = self.coords
-            for i, vector in enumerate(cor_list):
-                cor = np.array([float(vector.x), float(vector.y), float(vector.z)])
-                self.cg_atoms[i].set_coord(cor)
-        self.changed_coords = False
-        io = PDBIO()
-        io.set_structure(self.structure)
-        io.save('structures/' + self.name + '_' + prefix + '_RNA.pdb', SelectCGAtoms(atoms))
-
-    def move_nitrogens_to_mass_center(self):
-        self.calculate_mass_centers()
-        self.set_coords()
-        self.changed_coords = True
-
-    def calculate_p_n_dist(self):
-        dists = []
-        for chain in self.chains:
-            dists += chain.calculate_p_n_dist()
-        pir = []
-        pur = []
-        for (res, dist) in dists:
-            pur.append(dist) if res in ['  A', '  G'] else pir.append(dist)
-        return pur, pir
-
-    def calculate_c4_n_dist(self):
-        dists = []
-        for chain in self.chains:
-            dists += chain.calculate_c4_n_dist()
-        pir = []
-        pur = []
-        for (res, dist) in dists:
-            pur.append(dist) if res in ['  A', '  G'] else pir.append(dist)
-        return pur, pir
-
-    def calculate_c4_cu_cg_dist(self):
-        # C4-CU lub C4-CG ==> A,G:CG=C8 | C,U:CU=C6
-        dists = []
-        for chain in self.chains:
-            dists += chain.calculate_c4_cu_cg_dist()
-        pir = []
-        pur = []
-        for (res, dist) in dists:
-            pur.append(dist) if res in ['  A', '  G'] else pir.append(dist)
-        return pur, pir
-
-    def calculate_p_cu_cg_dist(self):
-        # P-CU lub P-CG ==> A,G:CG=C8 | C,U:CU=C6
-        dists = []
-        for chain in self.chains:
-            dists += chain.calculate_p_cu_cg_dist()
-        pir = []
-        pur = []
-        for (res, dist) in dists:
-            pur.append(dist) if res in ['  A', '  G'] else pir.append(dist)
-        return pur, pir
-
-    def calculate_c4_c4_dist(self):
-        dists = []
-        for chain in self.chains:
-            dists += chain.calculate_c4_c4_dist()
-        return dists
-
-
-class SelectCGAtoms(Select):
-    def __init__(self, atoms):
-        self.atoms = atoms
-
-    def accept_atom(self, atom):
-        if atom in self.atoms:
-            return True
-        else:
-            return False
 
 
 def write_csv(filename, colnames, cols):
@@ -373,7 +25,7 @@ def write_csv(filename, colnames, cols):
 
 
 def get_stats(dir):
-    print 'GETTING STATS'
+    print('GETTING STATS')
     files = glob.glob(dir + '/*.pdb')
     pur = {'p_mc': [], 'p_n': [], 'c4_n': [], 'c4_mc': [], 'c4_cg': [], 'p_cg': []}
     pir = {'p_mc': [], 'p_n': [], 'c4_n': [], 'c4_mc': [], 'c4_cu': [], 'p_cu': []}
@@ -411,39 +63,85 @@ def get_stats(dir):
               [pur['p_mc'], pir['p_mc'], pur['p_n'], pir['p_n'], pur['c4_mc'], pir['c4_mc'],
                pur['c4_n'], pir['c4_n'], pur['c4_cg'], pir['c4_cu'], pur['p_cg'], pir['p_cu'], c4_c4])
 
-# RNAstruct = RNA('Ding-data-set/1szy.pdb')
-# chain = RNAstruct.chains[0]
-get_stats('Kyu-data-set')
 
-# RNAstruct.create_selected_atoms_file('triangle', RNAstruct.atoms_triads)
+def count_rmsd(t1, t2):
+    P = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t1])
+    Q = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t2])
 
-# cl = Lattice(grid_spacing=0.67, r12=(4.53, 6.45), r13=(4.97, 7.29))
-# len(cl.vectors)
-# grid spacing from P-C4' statistics ==> 704 vectors 704:64=11
-# r12: P-N1/N9
-# r13: P-(C4')-P
-#       ==> vectors: 2482
-# grid: 0.7 pc_vectors: 560 pn_vectors: 2146
-# grid: 0.57 pc_vectors: 1016 pn_vectors: 3940
+    # print("RMSD before translation: ", rmsd.kabsch_rmsd(P, Q))
+    P -= rmsd.centroid(P)
+    Q -= rmsd.centroid(Q)
+    # print("RMSD after translation: ", rmsd.kabsch_rmsd(P, Q))
+    return rmsd.kabsch_rmsd(P, Q)
 
-# cl = Lattice(grid_spacing=0.67, r12=(4.46, 6.4), r13=(4.97, 7.29))
-# grid spacing from P-C4' statistics ==> 704 vectors 704:64=11
-# r12: P-MC for PURINES A/G
-# r13: P-(C4')-P
-#       ==> vectors: 2530
-# grid: 0.7 pc_vectors: 560 pn_vectors: 2194
-# grid: 0.57 pc_vectors: 1016 pn_vectors: 4096
 
-# cl = Lattice(grid_spacing=0.67, r12=(5.08, 7.34), r13=(4.97, 7.29))
-# grid spacing from P-C4' statistics ==> 704 vectors 704:64=11
-# r12: P-MC for PYRIMIDINES C/U
-# r13: P-(C4')-P
-#       ==> vectors: 3706
-# grid: 0.7 pc_vectors: 560 pn_vectors: 3370
-# grid: 0.57 pc_vectors: 1016 pn_vectors: 6100
+def triangle_stats(dirs, random_from_struct=1):
+    print('GETTING STATS')
+    files = []
+    for dir in dirs:
+        files += glob.glob(dir + '/*.pdb')
+    mean_rmsd_inter = []
+    rmsd_intra = []
+    triangles_whole_set = []
+    excluded_files = 0
+    for file in files:
+        triangles = []
+        rmsd_inter = []
+        try:
+            RNAstruct = RNA(file)
+            triangles += RNAstruct.get_triangles()
+            for n in range(len(triangles))[1:]:
+                rmsd_inter.append(count_rmsd(triangles[n - 1], triangles[n]))
+            mean_rmsd_inter.append(sum(rmsd_inter) / len(rmsd_inter))
+            triangles_whole_set += sample(triangles, random_from_struct)
+        except:
+            excluded_files += 1
+            print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    print('Excluded files: ', excluded_files)
+    for n in range(len(triangles_whole_set)):
+        for m in range(len(triangles_whole_set)):
+            if n != m:
+                rmsd_intra.append(count_rmsd(triangles_whole_set[n], triangles_whole_set[m]))
 
-# cl = Lattice(grid_spacing=0.57, r12=(5.08, 7.34), r13=(4.97, 7.29))
-# print len(cl.vectors)
+    print(len(triangles_whole_set), len(mean_rmsd_inter), len(rmsd_intra))
 
-# C4-CU C4-CG
-# (3.263863, 4.208843)
+    print('Mean RMSD from random triangles: ', sum(rmsd_intra) / len(rmsd_intra), 'Median: ', median(rmsd_intra))
+
+    write_csv('RMSDs_all.csv', ['mean_inter_structure_rmsd', 'intra_structure_rmsd'], [mean_rmsd_inter, rmsd_intra])
+
+
+def lattice_and_scalars(dirs):
+    files = []
+    for dir in dirs:
+        files += glob.glob(dir + '/*.pdb')
+
+    cross_products = []
+    for file in files:
+        try:
+            RNAstruct = RNA(file)
+
+            cl = Lattice(grid_spacing=0.67)
+            cn_vectors = []
+            # every possible vector from every C4' on lattice
+            for chain in RNAstruct.chains:
+                for residue in chain.residues:
+                    cn_vectors.append(residue.get_norm_vector("C4'", 'N9' if residue.kind in ['  A', '  G'] else 'N1'))
+
+            min_val = 10000
+            for cn in cn_vectors:
+                for vector in cl.vectors:
+                    v = np.array([float(vector.x), float(vector.y), float(vector.z)]) / float(
+                        plt.mlab.dist(np.array([float(vector.x), float(vector.y), float(vector.z)]),
+                                      np.array([float(0), float(0), float(0)])))
+                    dist = plt.mlab.dist(np.cross(cn, v), np.array([float(0), float(0), float(0)]))
+                    if dist < min_val:
+                        min_val = dist
+                cross_products.append(min_val)
+        except:
+            print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    write_csv('cross_products_all.csv', ['cross_products'], [cross_products])
+
+
+# triangle_stats(['Ding-data-set','Kyu-data-set'], 1)
+
+lattice_and_scalars(['Ding-data-set', 'Kyu-data-set'])
