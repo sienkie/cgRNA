@@ -5,6 +5,17 @@ from modules import *
 warnings.filterwarnings('error', message='.*discontinuous at.*')
 
 
+def count_rmsd(t1, t2):
+    P = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t1])
+    Q = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t2])
+
+    # print("RMSD before translation: ", rmsd.kabsch_rmsd(P, Q))
+    P -= rmsd.centroid(P)
+    Q -= rmsd.centroid(Q)
+    # print("RMSD after translation: ", rmsd.kabsch_rmsd(P, Q))
+    return rmsd.kabsch_rmsd(P, Q)
+
+
 def write_csv(filename, colnames, cols):
     assert len(colnames) == len(cols)
     with open(filename, 'w') as f:
@@ -64,17 +75,6 @@ def get_stats(dir):
                pur['c4_n'], pir['c4_n'], pur['c4_cg'], pir['c4_cu'], pur['p_cg'], pir['p_cu'], c4_c4])
 
 
-def count_rmsd(t1, t2):
-    P = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t1])
-    Q = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t2])
-
-    # print("RMSD before translation: ", rmsd.kabsch_rmsd(P, Q))
-    P -= rmsd.centroid(P)
-    Q -= rmsd.centroid(Q)
-    # print("RMSD after translation: ", rmsd.kabsch_rmsd(P, Q))
-    return rmsd.kabsch_rmsd(P, Q)
-
-
 def triangle_stats(dirs, random_from_struct=1):
     print('GETTING STATS')
     files = []
@@ -108,6 +108,27 @@ def triangle_stats(dirs, random_from_struct=1):
     print('Mean RMSD from random triangles: ', sum(rmsd_intra) / len(rmsd_intra), 'Median: ', median(rmsd_intra))
 
     write_csv('RMSDs_all.csv', ['mean_inter_structure_rmsd', 'intra_structure_rmsd'], [mean_rmsd_inter, rmsd_intra])
+
+
+def get_triangles(dirs, output, base=None):
+    files = []
+    excluded_files = 0
+    with open(output, 'w') as f:
+        for dir in dirs:
+            files += glob.glob(dir + '/*.pdb')
+            for file in files:
+                try:
+                    RNAstruct = RNA(file)
+                    triangles = RNAstruct.get_triangles(base)
+                    for tri in triangles:
+                        triangle = ''
+                        for at in tri:
+                            triangle += str(at.coord.x) + ',' + str(at.coord.y) + ',' + str(at.coord.z) + ','
+                        f.write(triangle + '\n')
+                except:
+                    excluded_files += 1
+                    print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+            print('Excluded files: ', excluded_files)
 
 
 def lattice_and_scalars(dirs):
@@ -144,4 +165,32 @@ def lattice_and_scalars(dirs):
 
 # triangle_stats(['Ding-data-set','Kyu-data-set'], 1)
 
-lattice_and_scalars(['Ding-data-set', 'Kyu-data-set'])
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles.csv")
+
+# lattice_and_scalars(['Ding-data-set', 'Kyu-data-set'])
+
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles_C.csv", "C")
+
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles_G.csv", "  G")
+#
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles_U.csv", "  U")
+
+def basic(dirs, base):
+    files = []
+    excluded_files = 0
+    for dir in dirs:
+        files += glob.glob(dir + '/*.pdb')
+        for file in files:
+            try:
+                RNAstruct = RNA(file)
+                for chain in RNAstruct.chains:
+                    for residue in chain.residues:
+                        if residue.kind == base:
+                            print(base)
+            except:
+                excluded_files += 1
+                print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    print('Excluded files: ', excluded_files)
+
+
+# basic(['Ding-data-set', 'Kyu-data-set'], '  C')

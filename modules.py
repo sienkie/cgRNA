@@ -231,17 +231,18 @@ class RNAChain:
             inter_dists += residue.calculate_p_cu_cg_dist()
         return inter_dists
 
-    def get_triangles(self):
+    def get_triangles(self, base=None):
         # iterate through residue:
         # - get P and N from "n-1" residue and P from "n" residue
         # - next P and N from "n" residue and P from "n+1" residue
         # and so on ...
         trios = []
         for i in range(len(self.residues))[1:]:
-            atp1 = self.residues[i - 1].get_atom('P')
-            atn = self.residues[i - 1].get_atom('N9' if self.residues[i - 1].kind in ['  A', '  G'] else 'N1')
-            atp2 = self.residues[i].get_atom('P')
-            trios.append([atp1, atn, atp2])
+            if base == None or self.residues[i - 1].kind == base:
+                atp1 = self.residues[i - 1].get_atom('P')
+                atn = self.residues[i - 1].get_atom('N9' if self.residues[i - 1].kind in ['  A', '  G'] else 'N1')
+                atp2 = self.residues[i].get_atom('P')
+                trios.append([atp1, atn, atp2])
         return trios
 
 
@@ -383,10 +384,10 @@ class RNA:
             dists += chain.calculate_c4_c4_dist()
         return dists
 
-    def get_triangles(self):
+    def get_triangles(self, base=None):
         trios = []
         for chain in self.chains:
-            trios += chain.get_triangles()
+            trios += chain.get_triangles(base)
         return trios
 
 

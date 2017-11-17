@@ -176,11 +176,11 @@ def create_main_chain_files(RNA, cl, coords=None):
         io.save('structures/' + RNA.name + '_cgRNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
 
 
-RNAstruct = RNA('Ding-data-set/1a51.pdb')
-chain = RNAstruct.chains[0]
+# RNAstruct = RNA('Ding-data-set/1a51.pdb')
+# chain = RNAstruct.chains[0]
 #lattice = Lattice()
 #coords = lattice.cast(chain)
-print(chain)
+# print(chain)
 #print len(coords), len(chain.atoms)
 
 #create_main_chain_files(RNAstruct, lattice, coords)
