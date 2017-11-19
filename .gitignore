@@ -1,0 +1,8 @@
+# pycharm
+.idea
+.gitignore
+.pyc
+__pycache__/
+.Rhistory
+.gitattributes
+.rec
