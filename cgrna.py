@@ -1,186 +1,196 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from CABS.cabsDock.vector3d import Vector3d
-import numpy as np
-from Bio.PDB import PDBParser, PDBIO, Select
+from modules import *
 
-
-class Atom:
-    def __init__(self, v, kind, res):
-        self.coord = v
-        self.kind = kind
-        self.res = res
-
-    def __str__(self):
-        return str(self.kind) + '\t' + str(self.coord) + '\t' + str(self.res)
+warnings.filterwarnings('error', message='.*discontinuous at.*')
 
 
-class RNAChain:
-    def __init__(self, kind):
-        self.atoms = []
-        self.kind = kind
+def count_rmsd(t1, t2):
+    P = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t1])
+    Q = np.array([[float(at.coord.x), float(at.coord.y), float(at.coord.z)] for at in t2])
 
-    def add_atom(self, atom):
-        self.atoms.append(atom)
-
-    def __str__(self):
-        s = 'RNA chain ' + str(self.kind) + '\n'
-        for at in self.atoms:
-            s += str(at) + '\n'
-        return s
+    # print("RMSD before translation: ", rmsd.kabsch_rmsd(P, Q))
+    P -= rmsd.centroid(P)
+    Q -= rmsd.centroid(Q)
+    # print("RMSD after translation: ", rmsd.kabsch_rmsd(P, Q))
+    return rmsd.kabsch_rmsd(P, Q)
 
 
-class RNA:
-    def __init__(self, pdbfile):
-        self.chains = []
-        self.pdb_atoms = []
-
-        mainchain = ["C4'", "P"]
-
-        p = PDBParser()
-        if len(pdbfile.split('/')) > 1:
-            self.name = pdbfile.split('/')[-1]
-        self.name = self.name.split('.')[0]
-        print(pdbfile)
-
-        chains = []
-        self.structure = p.get_structure(self.name, pdbfile)
-        for chain in self.structure[0]:  # model1
-            ch = RNAChain(chain.id)
-            chains.append(ch)
-            for residue in chain.get_residues():
-                for atom in residue:
-                    if atom.id in mainchain:
-                        coords = list(atom.get_vector())
-                        ch.add_atom(Atom(Vector3d(coords[0], coords[1], coords[2]), atom.id, residue.get_resname()))
-                        self.pdb_atoms.append(atom)
-
-        for chain in chains:
-            if len(chain.atoms) >= 1:
-                self.chains.append(chain)
-
-    def __str__(self):
-        s = 'RNA ' + self.name + '\n'
-        for chain in self.chains:
-            s += str(chain) + '\n'
-        return s
+def write_csv(filename, colnames, cols):
+    assert len(colnames) == len(cols)
+    with open(filename, 'w') as f:
+        for name in colnames:
+            f.write(name + ',')
+        f.write('\n')
+        max_len = max([len(col) for col in cols])
+        for i in range(max_len):
+            for col in cols:
+                a = ''
+                try:
+                    a += str(col[i])
+                except:
+                    pass
+                a += ','
+                f.write(a)
+            f.write('\n')
 
 
-class Lattice:
-    """
-    This class represent a CABS-like lattice. It is initialized with:
-    grid_spacing: distance between grid nodes, default 0.67 A
-    r12: tuple with min and max allowed values for P-C4' pseudo-bond length
-    r13: tuple with min and max allowed values for P-C4'-P or C4'-P-C4' end distance
-    """
+def get_stats(dir):
+    print('GETTING STATS')
+    files = glob.glob(dir + '/*.pdb')
+    pur = {'p_mc': [], 'p_n': [], 'c4_n': [], 'c4_mc': [], 'c4_cg': [], 'p_cg': []}
+    pir = {'p_mc': [], 'p_n': [], 'c4_n': [], 'c4_mc': [], 'c4_cu': [], 'p_cu': []}
+    c4_c4 = []
 
-    def __init__(self, grid_spacing=0.67, r12=(3.37, 4.34), r13=(4.97, 7.29)):
-        self.grid = grid_spacing
-        r12min = round((r12[0] / self.grid) ** 2)
-        r12max = round((r12[1] / self.grid) ** 2)
-        r13min = round((r13[0] / self.grid) ** 2)
-        r13max = round((r13[1] / self.grid) ** 2)
-        dim = int(r12max ** 0.5)
+    for file in files:
+        try:
+            RNAstruct = RNA(file)
+            p_n_pur, p_n_pir = RNAstruct.calculate_p_n_dist()
+            pur['p_n'] += p_n_pur
+            pir['p_n'] += p_n_pir
+            c4_n_pur, c4_n_pir = RNAstruct.calculate_c4_n_dist()
+            pur['c4_n'] += c4_n_pur
+            pir['c4_n'] += c4_n_pir
+            c4_cg, c4_cu = RNAstruct.calculate_c4_cu_cg_dist()
+            pur['c4_cg'] += c4_cg
+            pir['c4_cu'] += c4_cu
+            p_cg, p_cu = RNAstruct.calculate_p_cu_cg_dist()
+            pur['p_cg'] += p_cg
+            pir['p_cu'] += p_cu
+            c4_c4 += RNAstruct.calculate_c4_c4_dist()
 
-        self.vectors = []
-        for i in range(-dim, dim + 1):
-            for j in range(-dim, dim + 1):
-                for k in range(-dim, dim + 1):
-                    l = i * i + j * j + k * k
-                    if r12min <= float(l) <= r12max:
-                        self.vectors.append(Vector3d(i, j, k))
-
-        n = len(self.vectors)
-        self.good = np.zeros((n, n))
-        for i in range(n):
-            vi = self.vectors[i]
-            for j in range(n):
-                vj = self.vectors[j]
-                if r13min < (vi + vj).mod2() < r13max and vi.cross(vj).mod2():
-                    self.good[i, j] = 1
-
-    def cast(self, ch):
-        """
-        Function that casts a single protein chain onto the lattice.
-        Returns a list of tuples with (x, y, z) coordinates of CA atoms.
-        """
-
-        if len(ch.atoms) < 3:
-            raise Exception('Protein chain too short!')
-
-        prev = None
-        coord = [Vector3d(
-            round(ch.atoms[0].coord.x / self.grid),
-            round(ch.atoms[0].coord.y / self.grid),
-            round(ch.atoms[0].coord.z / self.grid)
-        )]
-
-        for atom in ch.atoms[1:]:
-            #  iterate over atoms
-            min_dr = 1e12
-            min_i = -1
-
-            for i, v in enumerate(self.vectors):
-                #  iterate over all possible vectors
-
-                # if len(coord) > 2 and self.good[prev, i] == 0:  #??
-                #     continue
-
-                if len(coord) < 2 or self.good[prev, i] == 1:
-
-                    new = coord[-1] + v
-                    dr = (self.grid * new - atom.coord).mod2()
-                    if dr < min_dr:
-                        min_dr = dr
-                        min_i = i
-
-            if min_i < 0:
-                raise Exception('Unsolvable geometric problem!')
-            else:
-                coord.append(coord[-1] + self.vectors[min_i])
-                prev = min_i
-
-        # ??
-        coord.insert(0, coord[0] + coord[1] - coord[2])
-        coord.append(coord[-1] + coord[-2] - coord[-3])
-
-        return coord
+            RNAstruct.move_nitrogens_to_mass_center()
+            p_mc_pur, p_mc_pir = RNAstruct.calculate_p_n_dist()
+            pur['p_mc'] += p_mc_pur
+            pir['p_mc'] += p_mc_pir
+            c4_mc_pur, c4_mc_pir = RNAstruct.calculate_c4_n_dist()
+            pur['c4_mc'] += c4_mc_pur
+            pir['c4_mc'] += c4_mc_pir
+        except:
+            print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    write_csv('Kyu_dist_two_ways.csv',
+              ['p_mc_pur_AG', 'p_mc_pir_CU', 'p_n_pur_AG', 'p_n_pir_CU', 'c4_mc_pur_AG', 'c4_mc_pir_CU',
+               'c4_n_pur_AG', 'c4_n_pir_CU', 'c4_cg_pur', 'c4_cu_pir', 'p_cg_pur', 'p_cu_pir', 'c4_c4'],
+              [pur['p_mc'], pir['p_mc'], pur['p_n'], pir['p_n'], pur['c4_mc'], pir['c4_mc'],
+               pur['c4_n'], pir['c4_n'], pur['c4_cg'], pir['c4_cu'], pur['p_cg'], pir['p_cu'], c4_c4])
 
 
-class SelectCGAtoms(Select):
-    def __init__(self, atoms):
-        self.atoms = atoms
+def triangle_stats(dirs, random_from_struct=1):
+    print('GETTING STATS')
+    files = []
+    for dir in dirs:
+        files += glob.glob(dir + '/*.pdb')
+    mean_rmsd_inter = []
+    rmsd_intra = []
+    triangles_whole_set = []
+    excluded_files = 0
+    for file in files:
+        triangles = []
+        rmsd_inter = []
+        try:
+            RNAstruct = RNA(file)
+            triangles += RNAstruct.get_triangles()
+            for n in range(len(triangles))[1:]:
+                rmsd_inter.append(count_rmsd(triangles[n - 1], triangles[n]))
+            mean_rmsd_inter.append(sum(rmsd_inter) / len(rmsd_inter))
+            triangles_whole_set += sample(triangles, random_from_struct)
+        except:
+            excluded_files += 1
+            print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    print('Excluded files: ', excluded_files)
+    for n in range(len(triangles_whole_set)):
+        for m in range(len(triangles_whole_set)):
+            if n != m:
+                rmsd_intra.append(count_rmsd(triangles_whole_set[n], triangles_whole_set[m]))
 
-    def accept_atom(self, atom):
-        if atom in self.atoms:
-            return True
-        else:
-            return False
+    print(len(triangles_whole_set), len(mean_rmsd_inter), len(rmsd_intra))
+
+    print('Mean RMSD from random triangles: ', sum(rmsd_intra) / len(rmsd_intra), 'Median: ', median(rmsd_intra))
+
+    write_csv('RMSDs_all.csv', ['mean_inter_structure_rmsd', 'intra_structure_rmsd'], [mean_rmsd_inter, rmsd_intra])
 
 
-def change_coords(RNA, cl, coords):
-    for i, vector in enumerate(coords[1:-1]):
-        cor = np.array([float(vector.x)*cl.grid, float(vector.y)*cl.grid, float(vector.z)*cl.grid])
-        RNA.pdb_atoms[i].set_coord(cor)
+def get_triangles(dirs, output, base=None):
+    files = []
+    excluded_files = 0
+    with open(output, 'w') as f:
+        for dir in dirs:
+            files += glob.glob(dir + '/*.pdb')
+            for file in files:
+                try:
+                    RNAstruct = RNA(file)
+                    triangles = RNAstruct.get_triangles(base)
+                    for tri in triangles:
+                        triangle = ''
+                        for at in tri:
+                            triangle += str(at.coord.x) + ',' + str(at.coord.y) + ',' + str(at.coord.z) + ','
+                        f.write(triangle + '\n')
+                except:
+                    excluded_files += 1
+                    print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+            print('Excluded files: ', excluded_files)
 
 
-def create_main_chain_files(RNA, cl, coords=None):
-    io = PDBIO()
-    io.set_structure(RNA.structure)
-    io.save('structures/' + RNA.name + '_RNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
+def lattice_and_scalars(dirs):
+    files = []
+    for dir in dirs:
+        files += glob.glob(dir + '/*.pdb')
 
-    if coords:
-        change_coords(RNA, cl, coords)
-        io = PDBIO()
-        io.set_structure(RNA.structure)
-        io.save('structures/' + RNA.name + '_cgRNA.pdb', SelectCGAtoms(RNA.pdb_atoms))
+    cross_products = []
+    for file in files:
+        try:
+            RNAstruct = RNA(file)
+
+            cl = Lattice(grid_spacing=0.67)
+            cn_vectors = []
+            # every possible vector from every C4' on lattice
+            for chain in RNAstruct.chains:
+                for residue in chain.residues:
+                    cn_vectors.append(residue.get_norm_vector("C4'", 'N9' if residue.kind in ['  A', '  G'] else 'N1'))
+
+            min_val = 10000
+            for cn in cn_vectors:
+                for vector in cl.vectors:
+                    v = np.array([float(vector.x), float(vector.y), float(vector.z)]) / float(
+                        plt.mlab.dist(np.array([float(vector.x), float(vector.y), float(vector.z)]),
+                                      np.array([float(0), float(0), float(0)])))
+                    dist = plt.mlab.dist(np.cross(cn, v), np.array([float(0), float(0), float(0)]))
+                    if dist < min_val:
+                        min_val = dist
+                cross_products.append(min_val)
+        except:
+            print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    write_csv('cross_products_all.csv', ['cross_products'], [cross_products])
 
 
-# RNAstruct = RNA('Ding-data-set/1a51.pdb')
-# chain = RNAstruct.chains[0]
-#lattice = Lattice()
-#coords = lattice.cast(chain)
-# print(chain)
-#print len(coords), len(chain.atoms)
+# triangle_stats(['Ding-data-set','Kyu-data-set'], 1)
 
-#create_main_chain_files(RNAstruct, lattice, coords)
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles.csv")
+
+# lattice_and_scalars(['Ding-data-set', 'Kyu-data-set'])
+
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles_C.csv", "  C")
+
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles_G.csv", "  G")
+#
+# get_triangles(['Ding-data-set', 'Kyu-data-set'], "similarity/triangles_U.csv", "  U")
+
+def basic(dirs, base):
+    files = []
+    excluded_files = 0
+    for dir in dirs:
+        files += glob.glob(dir + '/*.pdb')
+        for file in files:
+            if file == dir + '/2hem.pdb':
+                try:
+                    RNAstruct = RNA(file)
+                    for chain in RNAstruct.chains:
+                        for res in chain.residues:
+                            print(res)
+                except:
+                    excluded_files += 1
+                    print('Warning was raised as an exception! ' + str(file) + ' excluded from analysis')
+    print('Excluded files: ', excluded_files)
+
+
+basic(['Ding-data-set', 'Kyu-data-set'], '  C')

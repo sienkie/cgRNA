@@ -9,7 +9,6 @@ import glob, rmsd
 from random import sample
 from statistics import median
 import warnings
-from cgrna import Lattice
 
 warnings.filterwarnings('error', message='.*discontinuous at.*')
 
@@ -30,6 +29,86 @@ cg_tiads = {
     '  C': ["C4'", "P", "N4", "O6", "C6"],
     '  U': ["C4'", "P", "O4", "O2", "C6"]
 }
+
+class Lattice:
+    """
+    This class represent a CABS-like lattice. It is initialized with:
+    grid_spacing: distance between grid nodes, default 0.67 A
+    r12: tuple with min and max allowed values for P-C4' pseudo-bond length
+    r13: tuple with min and max allowed values for P-C4'-P or C4'-P-C4' end distance
+    """
+
+    def __init__(self, grid_spacing=0.67, r12=(3.37, 4.34), r13=(4.97, 7.29)):
+        self.grid = grid_spacing
+        r12min = round((r12[0] / self.grid) ** 2)
+        r12max = round((r12[1] / self.grid) ** 2)
+        r13min = round((r13[0] / self.grid) ** 2)
+        r13max = round((r13[1] / self.grid) ** 2)
+        dim = int(r12max ** 0.5)
+
+        self.vectors = []
+        for i in range(-dim, dim + 1):
+            for j in range(-dim, dim + 1):
+                for k in range(-dim, dim + 1):
+                    l = i * i + j * j + k * k
+                    if r12min <= float(l) <= r12max:
+                        self.vectors.append(Vector3d(i, j, k))
+
+        n = len(self.vectors)
+        self.good = np.zeros((n, n))
+        for i in range(n):
+            vi = self.vectors[i]
+            for j in range(n):
+                vj = self.vectors[j]
+                if r13min < (vi + vj).mod2() < r13max and vi.cross(vj).mod2():
+                    self.good[i, j] = 1
+
+    def cast(self, ch):
+        """
+        Function that casts a single protein chain onto the lattice.
+        Returns a list of tuples with (x, y, z) coordinates of CA atoms.
+        """
+
+        if len(ch.atoms) < 3:
+            raise Exception('Protein chain too short!')
+
+        prev = None
+        coord = [Vector3d(
+            round(ch.atoms[0].coord.x / self.grid),
+            round(ch.atoms[0].coord.y / self.grid),
+            round(ch.atoms[0].coord.z / self.grid)
+        )]
+
+        for atom in ch.atoms[1:]:
+            #  iterate over atoms
+            min_dr = 1e12
+            min_i = -1
+
+            for i, v in enumerate(self.vectors):
+                #  iterate over all possible vectors
+
+                # if len(coord) > 2 and self.good[prev, i] == 0:  #??
+                #     continue
+
+                if len(coord) < 2 or self.good[prev, i] == 1:
+
+                    new = coord[-1] + v
+                    dr = (self.grid * new - atom.coord).mod2()
+                    if dr < min_dr:
+                        min_dr = dr
+                        min_i = i
+
+            if min_i < 0:
+                raise Exception('Unsolvable geometric problem!')
+            else:
+                coord.append(coord[-1] + self.vectors[min_i])
+                prev = min_i
+
+        # ??
+        coord.insert(0, coord[0] + coord[1] - coord[2])
+        coord.append(coord[-1] + coord[-2] - coord[-3])
+
+        return coord
 
 
 class Atom:
